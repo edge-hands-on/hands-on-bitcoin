@@ -1,6 +1,11 @@
 package com.example.bitcoinhandson
 
 import io.ipfs.multibase.Base58
+import org.bouncycastle.crypto.digests.RIPEMD160Digest
+import org.bouncycastle.crypto.ec.CustomNamedCurves
+import org.bouncycastle.crypto.params.ECDomainParameters
+import org.bouncycastle.jce.provider.BouncyCastleProvider
+import org.bouncycastle.math.ec.FixedPointCombMultiplier
 import org.springframework.boot.CommandLineRunner
 import org.springframework.boot.WebApplicationType
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration
@@ -9,6 +14,7 @@ import org.springframework.context.annotation.ComponentScan
 import java.math.BigInteger
 import java.nio.ByteBuffer
 import java.security.MessageDigest
+import java.security.Security
 import java.util.Arrays
 import javax.crypto.Mac
 import javax.crypto.SecretKeyFactory
@@ -28,6 +34,8 @@ class BitcoinHandsOnApplication() : CommandLineRunner {
 
     private val expectedXPrivateKey = "xprv9s21ZrQH143K3GJpoapnV8SFfukcVBSfeCficPSGfubmSFDxo1kuHnLisriDvSnRRuL2Qrg5ggqHKNVpxR86QEC8w35uxmGoggxtQTPvfUu"
 
+    private val expectedPublicKeyFingerprint = "73c5da0a"
+
     private val hmacKey = "Bitcoin seed"
 
     // Network livenet keys
@@ -36,6 +44,8 @@ class BitcoinHandsOnApplication() : CommandLineRunner {
 
 
     override fun run(vararg args: String) {
+        Security.addProvider(BouncyCastleProvider())
+
         println("Input mnemonic: $mnemonic")
         println("Key password: $passphrase")
 
@@ -68,6 +78,10 @@ class BitcoinHandsOnApplication() : CommandLineRunner {
         println(chainCode.toHexString())
         println(chainCode.toHexString() == expectedChainCode)
 
+        //        var sequence = [
+        //            arg.version, arg.depth, arg.parentFingerPrint, arg.childIndex, arg.chainCode,
+        //            BufferUtil.emptyBuffer(1), arg.privateKey
+        //        ];
         val sequence = listOf<ByteArray>(
             ByteBuffer.allocate(4).putInt(76066276).array(),
             BigInteger.valueOf(0).toByteArray(),
@@ -92,18 +106,38 @@ class BitcoinHandsOnApplication() : CommandLineRunner {
         println(xPrivKey)
         println(expectedXPrivateKey == xPrivKey)
 
-        // Next steps
-        // arg.privateKey == privateKey
+        val CURVE_PARAMS = CustomNamedCurves.getByName("secp256k1")
+        val CURVE = ECDomainParameters(
+            CURVE_PARAMS.curve,
+            CURVE_PARAMS.g,
+            CURVE_PARAMS.n,
+            CURVE_PARAMS.h
+        )
+
+        val bnPrivateKey = BigInteger(privateKey.toHexString(), 16)
+        if (bnPrivateKey.bitLength() > CURVE.getN().bitLength()) {
+            println("Number must be less than N")
+            return
+        }
+
+        val publicKey = FixedPointCombMultiplier().multiply(CURVE.g, bnPrivateKey)
+        val publicKeyCompressed = publicKey.getEncoded(true)
+
+        val ripeDigest = MessageDigest.getInstance("RipeMD160")
+
+        val publicKeySha256 = sha256.digest(publicKeyCompressed)
+        val publicKeySha256Ripe = ripeDigest.digest(publicKeySha256)
+
+        val publicKeyFingerprint = publicKeySha256Ripe.slice(0..3).toByteArray()
+
+        println(publicKeyFingerprint.toHexString())
+        println(publicKeyFingerprint.toHexString() == expectedPublicKeyFingerprint)
 
         // var privateKey = new PrivateKey(BN.fromBuffer(arg.privateKey), network);
         //  var publicKey = privateKey.toPublicKey();
         //  var size = HDPrivateKey.ParentFingerPrintSize = 4;
         //  var fingerPrint = Hash.sha256ripemd160(publicKey.toBuffer()).slice(0, size);
 
-//        var sequence = [
-//            arg.version, arg.depth, arg.parentFingerPrint, arg.childIndex, arg.chainCode,
-//            BufferUtil.emptyBuffer(1), arg.privateKey
-//        ];
 
 //        return new HDPrivateKey({
 //            network: Network.get(network) || Network.defaultNetwork,
