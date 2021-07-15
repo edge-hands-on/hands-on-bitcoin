@@ -6,7 +6,10 @@ import java.security.MessageDigest
 import java.security.Security
 
 class PublicKey(
-    val keyData: ECPoint
+    val network: Network,
+    val keyData: ECPoint,
+    val encodedKey: String,
+    val checksum: ByteArray
 ) {
     companion object {
         const val SHA_FINGERPRINT = "SHA-256"

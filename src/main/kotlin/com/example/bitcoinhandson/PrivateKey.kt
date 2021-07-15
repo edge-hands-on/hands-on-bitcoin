@@ -1,14 +1,20 @@
 package com.example.bitcoinhandson
 
+import com.example.bitcoinhandson.Utils.Companion.serializeKey
 import org.bouncycastle.crypto.ec.CustomNamedCurves
 import org.bouncycastle.crypto.params.ECDomainParameters
 import org.bouncycastle.math.ec.FixedPointCombMultiplier
 import java.math.BigInteger
 
 class PrivateKey(
+    val network: Network,
     val keyData: ByteArray,
     val chainCode: ByteArray,
-    val encodedKey: String
+    val encodedKey: String,
+    val checksum: ByteArray,
+    val depth: Byte,
+    val parentFingerprint: Int,
+    val childNumber: Int
 ) {
     companion object {
         const val EC_ALGO = "secp256k1"
@@ -30,6 +36,15 @@ class PrivateKey(
 
         val publicKey = FixedPointCombMultiplier().multiply(curve.g, privateKey)
 
-        return PublicKey(publicKey)
+        val (keySerialized, checksum) = serializeKey(
+            network.publicKey,
+            depth,
+            parentFingerprint,
+            childNumber,
+            chainCode,
+            publicKey.getEncoded(true)
+        )
+
+        return PublicKey(network, publicKey, keySerialized, checksum)
     }
 }

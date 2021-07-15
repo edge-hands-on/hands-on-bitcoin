@@ -1,13 +1,11 @@
 package com.example.bitcoinhandson
 
-import io.ipfs.multibase.Base58
+import com.example.bitcoinhandson.Utils.Companion.serializeKey
 import org.springframework.stereotype.Component
-import java.nio.ByteBuffer
-import java.security.MessageDigest
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
-enum class Network(val versionPrivateKey: Int, val versionPublicKey: Int) {
+enum class Network(val privateKey: Int, val publicKey: Int) {
     MAINNET(76066276, 76067358),
     TESTNET(70615956, 70617039);
 }
@@ -41,8 +39,8 @@ class ExtendedKeyGenerator {
         chainCode: ByteArray,
         keyData: ByteArray
     ): PrivateKey {
-        val keySerialized = serializeKey(
-            network.versionPrivateKey,
+        val (keySerialized, checksum) = serializeKey(
+            network.privateKey,
             depth,
             parentFingerprint,
             childNumber,
@@ -50,34 +48,7 @@ class ExtendedKeyGenerator {
             keyData
         )
 
-        val sha256 = MessageDigest.getInstance(CHECKSUM_HASH_ALGO)
-        val hashedKey = sha256.digest(keySerialized)
-        val reHashedKey = sha256.digest(hashedKey)
-
-        val checksum = reHashedKey.slice(0..3).toByteArray()
-
-        return PrivateKey(keyData, chainCode, Base58.encode(keySerialized + checksum))
-    }
-
-    private fun serializeKey(
-        version: Int,
-        depth: Byte,
-        parentFingerprint: Int,
-        childNumber: Int,
-        chainCode: ByteArray,
-        keyData: ByteArray
-    ): ByteArray {
-        val sequence = listOf<ByteArray>(
-            ByteBuffer.allocate(4).putInt(version).array(),
-            ByteBuffer.allocate(1).put(depth).array(),
-            ByteBuffer.allocate(4).putInt(parentFingerprint).array(),
-            ByteBuffer.allocate(4).putInt(childNumber).array(),
-            chainCode,
-            ByteBuffer.allocate(1).array(),
-            keyData
-        )
-
-        return sequence.fold(byteArrayOf()) { acc, item -> acc + item }
+        return PrivateKey(network, keyData, chainCode, keySerialized, checksum, depth, parentFingerprint, childNumber)
     }
 
     lateinit var secretKey: ByteArray
