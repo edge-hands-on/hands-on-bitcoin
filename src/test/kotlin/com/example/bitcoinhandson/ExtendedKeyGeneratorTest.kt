@@ -2,6 +2,7 @@ package com.example.bitcoinhandson
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import java.nio.ByteBuffer
 
 class ExtendedKeyGeneratorTest {
 
@@ -21,12 +22,12 @@ class ExtendedKeyGeneratorTest {
         val xPrivateKey = ExtendedKeyGenerator().masterPrivateKey(seedHex.fromHexString(), Network.MAINNET)
 
         assertThat(xPrivateKey.network).isEqualTo(Network.MAINNET)
-        assertThat(xPrivateKey.keyData.toHexString()).isEqualTo(expectedMasterSecretKey)
+        assertThat(xPrivateKey.keyData.toByteArray().toHexString()).isEqualTo(expectedMasterSecretKey)
         assertThat(xPrivateKey.chainCode.toHexString()).isEqualTo(expectedMasterChainCode)
         assertThat(xPrivateKey.encodedKey).isEqualTo(expectedEncodedPrivateKey)
         assertThat(xPrivateKey.checksum.toHexString()).isEqualTo(expectedPrivateKeyChecksum)
         assertThat(xPrivateKey.depth).isEqualTo(0)
-        assertThat(xPrivateKey.parentFingerprint).isEqualTo(0)
+        assertThat(xPrivateKey.parentFingerprint).isEqualTo(ByteBuffer.allocate(4).array())
         assertThat(xPrivateKey.childNumber).isEqualTo(0)
     }
 }
