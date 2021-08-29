@@ -13,7 +13,10 @@ import javax.crypto.spec.SecretKeySpec
 
 class Utils {
     companion object {
-        const val HMAC_HASH_ALGO = "HmacSHA512"
+        private const val SHA_256 = "SHA-256"
+        private const val RIPEMD_160 = "RipeMD160"
+
+        private const val HMAC_HASH_ALGO = "HmacSHA512"
 
         fun serializeKey(
             network_key: Int,
@@ -77,6 +80,16 @@ class Utils {
                 return bigIntegerArray.slice(1 until bigIntegerArray.size).toByteArray()
 
             return bigIntegerArray
+        }
+
+        fun sha256ripemd160(data: ByteArray): ByteArray {
+            val ripeDigest = MessageDigest.getInstance(RIPEMD_160)
+            return ripeDigest.digest(sha256(data))
+        }
+
+        fun sha256(data: ByteArray): ByteArray {
+            val sha256Digest = MessageDigest.getInstance(SHA_256)
+            return sha256Digest.digest(data)
         }
     }
 }

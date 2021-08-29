@@ -3,6 +3,7 @@ package com.example.bitcoinhandson
 import com.example.bitcoinhandson.Utils.Companion.bigIntegerToByteArray
 import com.example.bitcoinhandson.Utils.Companion.generateKeyDataAndChainCode
 import com.example.bitcoinhandson.Utils.Companion.getEcCurve
+import com.example.bitcoinhandson.Utils.Companion.sha256ripemd160
 import com.example.bitcoinhandson.Utils.Companion.sequenceData
 import com.example.bitcoinhandson.Utils.Companion.serializeKey
 import org.bouncycastle.jce.provider.BouncyCastleProvider
@@ -10,7 +11,6 @@ import org.bouncycastle.math.ec.ECPoint
 import org.bouncycastle.math.ec.FixedPointCombMultiplier
 import java.math.BigInteger
 import java.nio.ByteBuffer
-import java.security.MessageDigest
 import java.security.Security
 
 class PrivateKey private constructor(
@@ -61,16 +61,7 @@ class PrivateKey private constructor(
         Security.addProvider(BouncyCastleProvider())
     }
 
-    fun getShaFingerprint(): ByteArray {
-        val hashSha256 = MessageDigest.getInstance(PublicKey.SHA_FINGERPRINT)
-        return hashSha256.digest(getPublicKeyDate().getEncoded(true))
-    }
-
-    fun getShortFingerprint(): ByteArray {
-        val ripeDigest = MessageDigest.getInstance(PublicKey.RIPE_FINGERPRINT)
-        val publicKeySha256Ripe = ripeDigest.digest(getShaFingerprint())
-        return publicKeySha256Ripe.slice(0..3).toByteArray()
-    }
+    fun getFingerprint() = sha256ripemd160(getPublicKeyDate().getEncoded(true)).slice(0..3).toByteArray()
 
     fun getPublicKey(): PublicKey {
         val publicKeyData = getPublicKeyDate()
@@ -78,7 +69,7 @@ class PrivateKey private constructor(
         return PublicKey.getInstance(network, publicKeyData, chainCode, depth, parentFingerprint, childNumber)
     }
 
-    fun derivedChild(index: Int, hardened: Boolean = false): PrivateKey {
+    fun deriveChild(index: Int, hardened: Boolean = false): PrivateKey {
         val childIndex = index + if (hardened) START_HARDENED_INDEX else 0
 
         val sequenceData = sequenceData(
@@ -104,9 +95,19 @@ class PrivateKey private constructor(
             childPrivateKey,
             childChainCode,
             (depth + 1).toByte(),
-            getShortFingerprint(),
+            getFingerprint(),
             childIndex.toInt()
         )
+    }
+
+    fun deriveChilds(indices: IntRange, hardened: Boolean = false): List<PrivateKey> {
+        val childs = mutableListOf<PrivateKey>()
+
+        for (index in indices.first..indices.last) {
+            childs.add(deriveChild(index, hardened))
+        }
+
+        return childs
     }
 
     private fun getPublicKeyDate(): ECPoint {

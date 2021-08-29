@@ -1,14 +1,18 @@
 package com.example.bitcoinhandson
 
+import com.example.bitcoinhandson.Network.MAINNET
+import com.example.bitcoinhandson.Network.TESTNET
 import com.example.bitcoinhandson.Utils.Companion.generateKeyDataAndChainCode
 import com.example.bitcoinhandson.Utils.Companion.getEcCurve
+import com.example.bitcoinhandson.Utils.Companion.sha256ripemd160
 import com.example.bitcoinhandson.Utils.Companion.sequenceData
 import com.example.bitcoinhandson.Utils.Companion.serializeKey
+import com.example.bitcoinhandson.Utils.Companion.sha256
+import io.ipfs.multibase.Base58
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.math.ec.ECPoint
 import org.bouncycastle.math.ec.FixedPointCombMultiplier
 import java.nio.ByteBuffer
-import java.security.MessageDigest
 import java.security.Security
 
 class PublicKey private constructor(
@@ -21,8 +25,10 @@ class PublicKey private constructor(
     val childNumber: Int
 ) {
     companion object {
-        const val SHA_FINGERPRINT = "SHA-256"
-        const val RIPE_FINGERPRINT = "RipeMD160"
+        val P2PKH_PREFIXES: Map<Network, Byte> = mapOf(
+            MAINNET to 0x00,
+            TESTNET to 0x6F
+        )
 
         fun getInstance(
             network: Network,
@@ -49,16 +55,7 @@ class PublicKey private constructor(
         Security.addProvider(BouncyCastleProvider())
     }
 
-    fun getShaFingerprint(): ByteArray {
-        val hashSha256 = MessageDigest.getInstance(SHA_FINGERPRINT)
-        return hashSha256.digest(keyData.getEncoded(true))
-    }
-
-    fun getShortFingerprint(): ByteArray {
-        val ripeDigest = MessageDigest.getInstance(RIPE_FINGERPRINT)
-        val publicKeySha256Ripe = ripeDigest.digest(getShaFingerprint())
-        return publicKeySha256Ripe.slice(0..3).toByteArray()
-    }
+    fun getFingerprint() = sha256ripemd160(keyData.getEncoded(true)).slice(0..3).toByteArray()
 
     fun derivedChild(parentChainCode: ByteArray, index: Int): PublicKey {
         val sequenceData = sequenceData(
@@ -72,6 +69,21 @@ class PublicKey private constructor(
             .multiply(getEcCurve().g, childKeyData)
             .add(keyData)
 
-        return getInstance(network, childPublicKey, childChainCode, (depth + 1).toByte(), getShortFingerprint(), index)
+        return getInstance(
+            network,
+            childPublicKey,
+            childChainCode,
+            (depth + 1).toByte(),
+            getFingerprint(),
+            index
+        )
+    }
+
+    fun getAddress(): String {
+        val prefix: Byte = P2PKH_PREFIXES[network]!!
+        val payload = ByteBuffer.allocate(1).put(prefix).array() + sha256ripemd160(keyData.getEncoded(true))
+        val payloadChecksum = sha256(sha256(payload)).slice(0..3).toByteArray()
+
+        return Base58.encode(payload + payloadChecksum)
     }
 }

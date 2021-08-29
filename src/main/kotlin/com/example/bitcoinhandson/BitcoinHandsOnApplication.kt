@@ -1,6 +1,6 @@
 package com.example.bitcoinhandson
 
-import com.example.bitcoinhandson.Network.MAINNET
+import com.example.bitcoinhandson.Network.TESTNET
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.springframework.boot.CommandLineRunner
 import org.springframework.boot.WebApplicationType
@@ -30,37 +30,54 @@ class BitcoinHandsOnApplication(
 
         val seed = seedGenerator.fromMnemonic(mnemonic, passphrase)
 
-        val masterXPrvKey = extendedKeyGenerator.masterPrivateKey(seed.encoded, MAINNET)
+        val masterXPrvKey = extendedKeyGenerator.masterPrivateKey(seed.encoded, TESTNET)
         val masterXPubKey = masterXPrvKey.getPublicKey()
 
-        println(masterXPrvKey.encodedKey)
-        println(masterXPubKey.getShortFingerprint().toHexString())
-        println(masterXPubKey.encodedKey)
+        println("\nMaster private key: ${masterXPrvKey.encodedKey}")
+        println("Master public key: ${masterXPubKey.encodedKey}")
+
+        val purpose = masterXPrvKey.deriveChild(44, true)
+        val coinType = purpose.deriveChild(1, true)
+        val account = coinType.deriveChild(0, true)
+        println("\nAccount private key: ${account.encodedKey}")
+        println("Account public key: ${account.getPublicKey().encodedKey}")
+
+        val receiving = account.deriveChild(0, false)
+        println("\nReceiving private key: ${receiving.encodedKey}")
+        println("Receiving public key: ${receiving.getPublicKey().encodedKey}")
+
+        val childs = receiving.deriveChilds(0..19, false)
+        for (index in 0 until childs.size) {
+            println("\nIndex private key: ${childs[index].encodedKey}")
+            println("Index public key: ${childs[index].getPublicKey().encodedKey}")
+
+            println("\nAddress $index: ${childs[index].getPublicKey().getAddress()}")
+        }
     }
 
     /*
-    mnemonic = "off arrive awkward together twenty anxiety save jaguar assume trigger sadness purse"
+    mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
 
-    m/44h/0h/0h/0/0: 17tG2pVbTaEtBtpCdGxnraEyCDMJHZPzUm
-    m/44h/0h/0h/0/1: 1Exn9Eh6Y5U3LKuWSkDFg9UNpEV69Jce7N
-    m/44h/0h/0h/0/2: 1Ao8hPnSEjLBk5gyZN1WxVKuUsrPit5pq
-    m/44h/0h/0h/0/3: 1MXoBqzYTA53vg11RsTENcdgUwngMNbb9E
-    m/44h/0h/0h/0/4: 15YVo61jP3myVrNmUZ4xyF2vGTD8a9q6AY
-    m/44h/0h/0h/0/5: 1QAEK4yPKXZd98zFnnj6UsRT3XprtXNuGE
-    m/44h/0h/0h/0/6: 1CQUS7kQLZdJdPWY5JvNabKZn1WGLkUifJ
-    m/44h/0h/0h/0/7: 14b19N7ntnzscBdnHSe3qmSUJNoY6xU8eX
-    m/44h/0h/0h/0/8: 19NZBibDAk9Zov1fWYVKZ1E76eM72sB5f1
-    m/44h/0h/0h/0/9: 1GAYg9tzxs1nspHtNBdV8Ww4RJf4DpGVBx
-    m/44h/0h/0h/0/10: 1968eZkvNLexaDL31NfhpWvASSybsWYbNn
-    m/44h/0h/0h/0/11: 16JHJg55GDZsCAzN7qctBtD1S7ykRBry9C
-    m/44h/0h/0h/0/12: 1Loi7TK5h9UCWoiKwknLWZyWyQ6F42aCaK
-    m/44h/0h/0h/0/13: 1BT3j4GBEteNm2Afodwr9ZSzQtgh8pb6Lc
-    m/44h/0h/0h/0/14: 17xjUEZD4rhmi1fvQbkTLxPwsVy91sZ3Vk
-    m/44h/0h/0h/0/15: 1Hocgc6mro3Bp1HaFbqnyP6A5Qx7iRs9m3
-    m/44h/0h/0h/0/16: 1HFniYoSauVih9baecRAWT6etM8jbph111
-    m/44h/0h/0h/0/17: 1DWWPWjHXfEN4jdQBVXAwuQeArsa4UYt5u
-    m/44h/0h/0h/0/18: 147U6gxcFA5gBhj7JHNZgPQ3LygssQ3HCL
-    m/44h/0h/0h/0/19: 14rxiT7xUWfaMPKzv2XdPHSJ7uKFhat4sZ
+    m/44'/1'/0'/0/0	  mkpZhYtJu2r87Js3pDiWJDmPte2NRZ8bJV
+    m/44'/1'/0'/0/1	  mzpbWabUQm1w8ijuJnAof5eiSTep27deVH
+    m/44'/1'/0'/0/2	  mnTkxhNkgx7TsZrEdRcPti564yQTzynGJp
+    m/44'/1'/0'/0/3	  mpW3iVi2Td1vqDK8Nfie29ddZXf9spmZkX
+    m/44'/1'/0'/0/4	  n2BMo5arHDyAK2CM8c56eoEd18uEkKnRLC
+    m/44'/1'/0'/0/5	  mvWgTTtQqZohUPnykucneWNXzM5PLj83an
+    m/44'/1'/0'/0/6	  muTU2Av1EwnsyhieQhyPL7hgEf883LR4xg
+    m/44'/1'/0'/0/7	  mwduZ8Ksa563v7rWdSPmqyKR4y2FeB5g8p
+    m/44'/1'/0'/0/8	  miyBE85ro5zt9RseSzYVEbB3TfzkxgSm8C
+    m/44'/1'/0'/0/9	  mnYwW7mU3jajB11vrpDZwZDrXwVfE5Jc31
+    m/44'/1'/0'/0/10  mx3YNRT8Vg8QwFq5Z5MAVDDVHp4ihHsffn
+    m/44'/1'/0'/0/11  myHL2QuECVYkx9Y94gyC6RSweLNnteETsB
+    m/44'/1'/0'/0/12  mqevqtsdeR7WuqwiXnyFU72ULK627W2mFH
+    m/44'/1'/0'/0/13  mmKyDn8NJwXvqFqWDNR9QnMfd8mwrHvynF
+    m/44'/1'/0'/0/14  mnDmjqLKEBBMnzWtrz5LptNChiQNxYLK84
+    m/44'/1'/0'/0/15  n1MsayUmxjiUyrbQs6F2megEA8azR1nYc1
+    m/44'/1'/0'/0/16  mhhTTZMmNTjT4zzS5xVpXSDan9iHy31Z2b
+    m/44'/1'/0'/0/17  mp8ML8bKSiheUJPompTj5GZEWJUPmr1eiH
+    m/44'/1'/0'/0/18  mjtvWKf25G3heJkzVkBRYNmZmPypdEY3hj
+    m/44'/1'/0'/0/19  n3Zb38sLaM21q8dwDNZq7AsJda9omg6PuP
      */
 }
 
