@@ -15,11 +15,10 @@ class BitcoinHandsOnApplication(
     private val seedGenerator: SeedGenerator,
     private val extendedKeyGenerator: ExtendedKeyGenerator
 ) : CommandLineRunner {
-    private val mnemonic =
-        "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
+//    private val mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
 
-    //    private val mnemonic = "wish auto scale naive spend below fan double lizard audit indoor toddler"
-//    private val mnemonic = "off arrive awkward together twenty anxiety save jaguar assume trigger sadness purse"
+    //        private val mnemonic = "wish auto scale naive spend below fan double lizard audit indoor toddler"
+    private val mnemonic = "layer edge fiction grain margin thing safe avocado left happy hip legal"
     private val passphrase = ""
 
     override fun run(vararg args: String) {
@@ -47,11 +46,11 @@ class BitcoinHandsOnApplication(
         println("Receiving public key: ${receiving.getPublicKey().encodedKey}")
 
         val childs = receiving.deriveChilds(0..19, false)
-        for (index in 0 until childs.size) {
-            println("\nIndex private key: ${childs[index].encodedKey}")
-            println("Index public key: ${childs[index].getPublicKey().encodedKey}")
-
-            println("\nAddress $index: ${childs[index].getPublicKey().getAddress()}")
+        for (index in childs.indices) {
+            println("\nIndex [$index] private key: ${childs[index].encodedKey}")
+            println("Index [$index] public key: ${childs[index].getPublicKey().encodedKey}")
+            println("P2PKH Address [$index]: ${childs[index].getPublicKey().getP2PKHAddress()}")
+            println("P2WPKH Address [$index]: ${childs[index].getPublicKey().getP2WPKHAddress()}")
         }
     }
 

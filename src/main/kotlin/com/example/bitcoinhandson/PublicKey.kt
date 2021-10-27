@@ -30,6 +30,11 @@ class PublicKey private constructor(
             TESTNET to 0x6F
         )
 
+        val P2WPKH_PREFIXES: Map<Network, String> = mapOf(
+            MAINNET to "bc",
+            TESTNET to "tb"
+        )
+
         fun getInstance(
             network: Network,
             keyData: ECPoint,
@@ -79,11 +84,19 @@ class PublicKey private constructor(
         )
     }
 
-    fun getAddress(): String {
+    fun getP2PKHAddress(): String {
         val prefix: Byte = P2PKH_PREFIXES[network]!!
         val payload = ByteBuffer.allocate(1).put(prefix).array() + sha256ripemd160(keyData.getEncoded(true))
         val payloadChecksum = sha256(sha256(payload)).slice(0..3).toByteArray()
 
         return Base58.encode(payload + payloadChecksum)
+    }
+
+    fun getP2WPKHAddress(): String {
+        val prefix = P2WPKH_PREFIXES[network]!!
+        val version = 0
+        val keyHash = sha256ripemd160(keyData.getEncoded(true))
+
+        return Bech32.encodeAddress(prefix, version, keyHash)
     }
 }

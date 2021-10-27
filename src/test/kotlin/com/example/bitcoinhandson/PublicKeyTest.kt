@@ -60,8 +60,35 @@ class PublicKeyTest {
         val xPrivateKey = ExtendedKeyGenerator().masterPrivateKey(seedHex.fromHexString(), Network.MAINNET)
 
         val xPublicKey = xPrivateKey.getPublicKey()
-        val address = xPublicKey.getAddress()
+        val address = xPublicKey.getP2PKHAddress()
 
         assertThat(address).isEqualTo(expectedAddress)
+    }
+
+    @Test
+    fun `should generate correct p2wpkh address for public key`() {
+        val expectedAddress = "bc1qw0za5zsr6tggqwmnruzzg2a5pnkjlzaus8upyg"
+
+        val seedHex = "5eb00bbddcf069084889a8ab91555681" +
+                "65f5c453ccb85e70811aaed6f6da5fc1" +
+                "9a5ac40b389cd370d086206dec8aa6c4" +
+                "3daea6690f20ad3d8d48b2d2ce9e38e4"
+
+        val xPrivateKey = ExtendedKeyGenerator().masterPrivateKey(seedHex.fromHexString(), Network.MAINNET)
+
+        val xPublicKey = xPrivateKey.getPublicKey()
+        val address = xPublicKey.getP2WPKHAddress()
+
+        assertThat(address).isEqualTo(expectedAddress)
+    }
+
+    @Test
+    fun `should decode a p2wpkh address correctly to a public key`() {
+        val expectedPubKeyHash = "73c5da0a03d2d0803b731f04242bb40ced2f8bbc"
+        val p2wpkhAddress = "bc1qw0za5zsr6tggqwmnruzzg2a5pnkjlzaus8upyg"
+
+        val pubKey = Bech32.decodeAddress("bc", p2wpkhAddress)
+
+        assertThat(pubKey.toHexString()).isEqualTo(expectedPubKeyHash)
     }
 }

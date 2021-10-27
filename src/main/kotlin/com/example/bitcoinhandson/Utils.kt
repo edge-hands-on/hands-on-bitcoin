@@ -74,8 +74,15 @@ class Utils {
             )
         }
 
+        /**
+         * Take off the first byte from the Java BigInteger to ByteArray conversion, because the first byte is used
+         * as the sign bit for the BigInteger
+         */
         fun bigIntegerToByteArray(bigInteger: BigInteger): ByteArray {
             val bigIntegerArray = bigInteger.toByteArray()
+
+            // Don't touch this!!!
+            // Need to understand the internals of BigInteger to ByteArray conversion
             if (bigIntegerArray[0] == 0.toByte())
                 return bigIntegerArray.slice(1 until bigIntegerArray.size).toByteArray()
 
