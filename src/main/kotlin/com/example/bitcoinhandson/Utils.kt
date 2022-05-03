@@ -3,6 +3,8 @@ package com.example.bitcoinhandson
 import com.example.bitcoinhandson.Network.MAINNET
 import com.example.bitcoinhandson.Network.TESTNET
 import io.ipfs.multibase.Base58
+import org.apache.logging.log4j.Logger
+import org.apache.logging.log4j.core.LoggerContext
 import org.bouncycastle.crypto.ec.CustomNamedCurves
 import org.bouncycastle.crypto.params.ECDomainParameters
 import java.math.BigInteger
@@ -100,3 +102,7 @@ class Utils {
         }
     }
 }
+
+@Suppress("unused")
+inline val <reified T> T.log: Logger
+    get() = LoggerContext.getContext().getLogger(T::class.java.canonicalName)
