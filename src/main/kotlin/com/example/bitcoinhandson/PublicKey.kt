@@ -2,12 +2,12 @@ package com.example.bitcoinhandson
 
 import com.example.bitcoinhandson.Network.MAINNET
 import com.example.bitcoinhandson.Network.TESTNET
+import com.example.bitcoinhandson.Utils.Companion.doubleSha256
 import com.example.bitcoinhandson.Utils.Companion.generateKeyDataAndChainCode
 import com.example.bitcoinhandson.Utils.Companion.getEcCurve
 import com.example.bitcoinhandson.Utils.Companion.sha256ripemd160
 import com.example.bitcoinhandson.Utils.Companion.sequenceData
 import com.example.bitcoinhandson.Utils.Companion.serializeKey
-import com.example.bitcoinhandson.Utils.Companion.sha256
 import io.ipfs.multibase.Base58
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.math.ec.ECPoint
@@ -60,11 +60,15 @@ class PublicKey private constructor(
         Security.addProvider(BouncyCastleProvider())
     }
 
-    fun getFingerprint() = sha256ripemd160(keyData.getEncoded(true)).slice(0..3).toByteArray()
+    fun getFingerprint() = sha256ripemd160(getCompressedKeydata()).slice(0..3).toByteArray()
+
+    fun getKeyHash() = sha256ripemd160(getCompressedKeydata())
+
+    fun getCompressedKeydata() = keyData.getEncoded(true)
 
     fun derivedChild(parentChainCode: ByteArray, index: Int): PublicKey {
         val sequenceData = sequenceData(
-            keyData.getEncoded(true),
+            getCompressedKeydata(),
             ByteBuffer.allocate(4).putInt(index).array()
         )
 
@@ -86,8 +90,8 @@ class PublicKey private constructor(
 
     fun getP2PKHAddress(): String {
         val prefix: Byte = P2PKH_PREFIXES[network]!!
-        val payload = ByteBuffer.allocate(1).put(prefix).array() + sha256ripemd160(keyData.getEncoded(true))
-        val payloadChecksum = sha256(sha256(payload)).slice(0..3).toByteArray()
+        val payload = ByteBuffer.allocate(1).put(prefix).array() + sha256ripemd160(getCompressedKeydata())
+        val payloadChecksum = doubleSha256(payload).slice(0..3).toByteArray()
 
         return Base58.encode(payload + payloadChecksum)
     }
@@ -95,7 +99,7 @@ class PublicKey private constructor(
     fun getP2WPKHAddress(): String {
         val prefix = P2WPKH_PREFIXES[network]!!
         val version = 0
-        val keyHash = sha256ripemd160(keyData.getEncoded(true))
+        val keyHash = sha256ripemd160(getCompressedKeydata())
 
         return Bech32.encodeAddress(prefix, version, keyHash)
     }

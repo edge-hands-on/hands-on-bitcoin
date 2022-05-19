@@ -8,7 +8,7 @@ class WalletFactory(
     private val extendedKeyGenerator: ExtendedKeyGenerator,
     private val jsonRPC: JsonRPC
 ) {
-    fun getWallet(mnemonic: String, passphrase: String): Wallet {
+    fun getWallet(network: Network, mnemonic: String, passphrase: String): Wallet {
         log.debug("Input mnemonic: $mnemonic")
         log.debug("Key password: $passphrase")
 
@@ -28,10 +28,11 @@ class WalletFactory(
         log.debug("Account public key: ${account.getPublicKey().encodedKey}")
 
         val receiving = account.deriveChild(0, false)
+        val change = account.deriveChild(1, false)
 
         log.debug("Receiving private key: ${receiving.encodedKey}")
         log.debug("Receiving public key: ${receiving.getPublicKey().encodedKey}")
 
-        return Wallet(jsonRPC, masterXPrvKey, purpose, coinType, account, receiving)
+        return Wallet(network, jsonRPC, masterXPrvKey, purpose, coinType, account, receiving, change)
     }
 }

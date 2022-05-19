@@ -9,6 +9,7 @@ import org.bouncycastle.crypto.ec.CustomNamedCurves
 import org.bouncycastle.crypto.params.ECDomainParameters
 import java.math.BigInteger
 import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import java.security.MessageDigest
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
@@ -99,6 +100,23 @@ class Utils {
         fun sha256(data: ByteArray): ByteArray {
             val sha256Digest = MessageDigest.getInstance(SHA_256)
             return sha256Digest.digest(data)
+        }
+
+        fun doubleSha256(data: ByteArray) = sha256(sha256(data))
+
+        fun oneByte(value: Byte): ByteArray = ByteBuffer.allocate(1).put(value).array()
+
+        fun fourBytesLittleEndian(value: Int): ByteArray = nBytesLittleEndian(4, value)
+
+        fun eightBytesLittleEndian(value: Int): ByteArray = nBytesLittleEndian(8, value)
+
+        fun nBytesLittleEndian(n: Int, value: Int): ByteArray =
+            ByteBuffer.allocate(n).order(ByteOrder.LITTLE_ENDIAN).putInt(value).array()
+
+        fun decodeP2WPKHAddress(network: Network = TESTNET, address: String): ByteArray {
+            val prefix = PublicKey.P2WPKH_PREFIXES[network]!!
+
+            return Bech32.decodeAddress(prefix, address)
         }
     }
 }

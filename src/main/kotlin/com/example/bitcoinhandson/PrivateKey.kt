@@ -3,15 +3,19 @@ package com.example.bitcoinhandson
 import com.example.bitcoinhandson.Utils.Companion.bigIntegerToByteArray
 import com.example.bitcoinhandson.Utils.Companion.generateKeyDataAndChainCode
 import com.example.bitcoinhandson.Utils.Companion.getEcCurve
-import com.example.bitcoinhandson.Utils.Companion.sha256ripemd160
 import com.example.bitcoinhandson.Utils.Companion.sequenceData
 import com.example.bitcoinhandson.Utils.Companion.serializeKey
+import com.example.bitcoinhandson.Utils.Companion.sha256ripemd160
+import org.bouncycastle.jce.ECNamedCurveTable
 import org.bouncycastle.jce.provider.BouncyCastleProvider
+import org.bouncycastle.jce.spec.ECPrivateKeySpec
 import org.bouncycastle.math.ec.ECPoint
 import org.bouncycastle.math.ec.FixedPointCombMultiplier
 import java.math.BigInteger
 import java.nio.ByteBuffer
+import java.security.KeyFactory
 import java.security.Security
+import java.security.Signature
 
 class PrivateKey private constructor(
     val network: Network,
@@ -100,14 +104,22 @@ class PrivateKey private constructor(
         )
     }
 
-    fun deriveChilds(indices: IntRange, hardened: Boolean = false): List<PrivateKey> {
-        val childs = mutableListOf<PrivateKey>()
+    fun deriveChildren(indices: IntRange, hardened: Boolean = false): List<PrivateKey> {
+        val children = mutableListOf<PrivateKey>()
 
         for (index in indices.first..indices.last) {
-            childs.add(deriveChild(index, hardened))
+            children.add(deriveChild(index, hardened))
         }
 
-        return childs
+        return children
+    }
+
+    fun signData(data: ByteArray): ByteArray {
+        val sign = Signature.getInstance("NONEwithECDSA", "BC")
+        sign.initSign(getECPrivateKey())
+        sign.update(data)
+
+        return sign.sign()
     }
 
     private fun getPublicKeyDate(): ECPoint {
@@ -116,5 +128,12 @@ class PrivateKey private constructor(
         }
 
         return FixedPointCombMultiplier().multiply(getEcCurve().g, keyData)
+    }
+
+    private fun getECPrivateKey(): java.security.PrivateKey {
+        val ecParamSpec = ECNamedCurveTable.getParameterSpec(EC_ALGO)
+        val privateKeySpec = ECPrivateKeySpec(keyData, ecParamSpec)
+        val keyFactory = KeyFactory.getInstance("ECDSA", "BC")
+        return keyFactory.generatePrivate(privateKeySpec)
     }
 }
