@@ -19,7 +19,7 @@ class JsonRPC(
         const val USERNAME = "bitcoinrpc"
         const val PASSWORD = "Jfq0Mq2qpb2J4xGqe/p52IO/a5Vwut2lvVGsKBYSLjuw"
 
-        const val HOST_IP = "3.121.189.220"
+        const val HOST_IP = "3.71.22.222"
     }
 
     fun <T> request(method: String, params: Array<Any>, valueType: Class<T>): T? {

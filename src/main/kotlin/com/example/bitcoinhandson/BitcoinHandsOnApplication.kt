@@ -37,11 +37,11 @@ class BitcoinHandsOnApplication(
         wallet2.printAddresses()
         println("")
 
-        println("Getting transaction description for 7d52825be5de437846e29d24319dae45c49da04bf43f83fa6847fab1c6bbf6ae")
+        println("Getting transaction description for b1c13e7cfb36512432d953ef9a5c6957ce39a0ee013687f96516c542758a6485")
         // Transaction with our code
         val result = wallet1.getRawTransaction(
-            "7d52825be5de437846e29d24319dae45c49da04bf43f83fa6847fab1c6bbf6ae",
-            "000000000000000ab7143223439025848691f853ac2f4328317f48f76eb88024"
+            "b1c13e7cfb36512432d953ef9a5c6957ce39a0ee013687f96516c542758a6485",
+            "0000000000000040f1c961a18d6660aebf91883245259d554fb1d98bfd3ade0b"
         )
         println("Result: $result")
         println("")
@@ -61,7 +61,7 @@ class BitcoinHandsOnApplication(
                     TxIn(
                         result.txid,
                         0,
-                        (result.vout[0].value * 100000000).toInt(),
+                        inputAmount,
                         wallet1.receiveAddrs[0]
                     )
                 )
